@@ -20,5 +20,6 @@ main(_Args)->
   io:format("recv:~p~n",[chat_server:recv()]),
   io:format("history:~p~n",[chat_server:show_history()]),
   io:format("recv:~p~n",[chat_server:recv()]),
+  io:format
   chat_server ! "no use message!",
   chat_server:stop().
