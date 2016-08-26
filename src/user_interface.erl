@@ -9,22 +9,25 @@
 -module(user_interface).
 
 -behaviour(gen_server).
-
+-include("chat_server.hrl").
 %% API
--export([start_link/0]).
+-export([start_link/1, fetch_msg/1, send_msg/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2, code_change/3]).
+  terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE).
-
--record(state, {}).
+-record(state, {name, history = [], remain = queue:new()}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-
+-spec fetch_msg(Pid :: pid()) -> Data :: term().
+fetch_msg(Pid) ->
+  gen_server:call(Pid, fetch_msg).
+-spec send_msg(Pid :: pid(), To :: string(), Data :: term()) -> ok|{error, Reason :: string()}.
+send_msg(Pid, To, Data) ->
+  gen_server:call(Pid, {send_msg, To, Data}).
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
@@ -32,8 +35,8 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(UserName) ->
+  gen_server:start_link(?MODULE, [UserName], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -50,8 +53,8 @@ start_link() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([]) ->
-    {ok, #state{}}.
+init([UserName]) ->
+  {ok, #state{name = UserName}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -67,9 +70,23 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+
+
+handle_call(fetch_msg, _From, State) ->
+  case queue:out(State#state.remain) of
+    {{value, Item}, Q2} ->
+      {reply, Item#message.msg, State#state{remain = Q2, history = State#state.history ++ [Item]}};
+    {empty, _} ->
+      {reply, {error, "no message!"}, State}
+  end;
+handle_call({send_msg, To, Data}, _From, State) ->
+  case chat_server_center:distribution(To, Data) of
+    ok ->
+      {reply, ok, State};
+    {error, _} ->
+      {reply, {error, "wrong user!"}, State}
+  end.
+
 
 %%--------------------------------------------------------------------
 %% @private
@@ -81,8 +98,8 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast({recv, Msg}, State) ->
+  {noreply, State#state{remain = queue:in(Msg, State#state.remain)}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -95,7 +112,7 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(_Info, State) ->
-    {noreply, State}.
+  {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -109,7 +126,7 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, _State) ->
-    ok.
+  ok.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -120,5 +137,5 @@ terminate(_Reason, _State) ->
 %% @end
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+  {ok, State}.
 

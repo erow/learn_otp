@@ -4,9 +4,8 @@
   {vsn, svn},
   {registered, []},
   {applications, [kernel,
-                  stdlib,
-                  inets
+                  stdlib
                  ]},
-  {mod, { chat_server_app, [0,0]}},
+  {mod, { chat_server_app, []}},
   {env, []}
  ]}.

@@ -6,12 +6,12 @@
 %%% @end
 %%% Created : 26 Aug 2016 by erow <>
 %%%-------------------------------------------------------------------
--module(user_sup).
+-module(chat_user_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/0,start_child/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -21,7 +21,8 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
-
+start_child(UserName)->
+  supervisor:start_child(?MODULE,[UserName]).
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the supervisor
@@ -31,6 +32,7 @@
 %%--------------------------------------------------------------------
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -57,10 +59,9 @@ init([]) ->
 
     AChild = #{id => 'users',
                start => {'user_interface', start_link, []},
-               restart => permanent,
+               restart=>temporary,
                shutdown => 5000,
-               type => worker,
-               modules => ['user_interface']},
-
+               type => worker},
     {ok, {SupFlags, [AChild]}}.
+
 

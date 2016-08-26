@@ -62,12 +62,12 @@ init([]) ->
                type => worker,
                modules => [chat_server_center]},
     Users = #{id => user_sup_id,
-               start => {user_sup, start_link, []},
+               start => {chat_user_sup, start_link, []},
                restart => permanent,
                shutdown => 5000,
                type => supervisor,
-               modules => [user_sup]},
-    {ok, {SupFlags, [Center]}}.
+               modules => [chat_user_sup]},
+    {ok, {SupFlags, [Center,Users]}}.
 
 %%%===================================================================
 %%% Internal functions
