@@ -1,0 +1,12 @@
+{application, chat_server,
+ [
+  {description, ""},
+  {vsn, svn},
+  {registered, []},
+  {applications, [kernel,
+                  stdlib,
+                  inets
+                 ]},
+  {mod, { chat_server_app, [0,0]}},
+  {env, []}
+ ]}.
